@@ -1,32 +1,32 @@
 import re
 
-from django.core.validators import MinValueValidator
-from django.shortcuts import render, get_object_or_404
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.files.base import ContentFile
+from django.core.validators import MinValueValidator
+from django.shortcuts import get_object_or_404, render
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from users.models import MyUser, Follow
-from recipes.models import Recipe, Tag, Ingredient, ShopingList, Recipe, RecipeIngredient, Favorite
-from rest_framework import serializers
-
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from .validators import (follow_unique_validator, color_validator, 
-                        shopping_cart_validator, favorite_validator)
 from drf_extra_fields.fields import Base64ImageField
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShopingList, Tag)
+from rest_framework import serializers
+from users.models import Follow, MyUser
 
+from .validators import (color_validator, favorite_validator,
+                         follow_unique_validator, shopping_cart_validator)
 
 
 class MyUserCreateSerializer(UserCreateSerializer):
     """ Сериализатор создания пользователя. """
 
     class Meta:
-        model = MyUser 
+        model = MyUser
         fields = (
-            'email', 
-            'username', 
-            'first_name', 
-            'last_name', 
+            'email',
+            'username',
+            'first_name',
+            'last_name',
             'password'
-            )
+        )
         extra_kwargs = {'password': {'write_only': True}}
 
 
@@ -45,8 +45,7 @@ class MyUserSerializer(UserSerializer):
             'first_name',
             'last_name',
             'is_subscribed'
-            )
-
+        )
 
     def get_is_subscribed(self, obj):
         user = self.context['request'].user
@@ -54,15 +53,13 @@ class MyUserSerializer(UserSerializer):
             return False
         return Follow.objects.filter(user=user, author=obj).exists()
 
- 
-
 
 class UserFollowSerializer(UserSerializer):
     """Сериализатор вывода авторов на которых только что подписался пользователь.  
     В выдачу добавляются рецепты."""
     recipes = serializers.SerializerMethodField(method_name='get_recipes')
-    recipes_count = serializers.SerializerMethodField(method_name='get_recipes_count')
-    
+    recipes_count = serializers.SerializerMethodField(
+        method_name='get_recipes_count')
 
     class Meta:
         model = MyUser
@@ -77,7 +74,6 @@ class UserFollowSerializer(UserSerializer):
             'recipes_count'
         )
         read_only_fields = '__all__',
-
 
     def get_srs(self):
         return ShortRecipeSerializer
@@ -96,18 +92,16 @@ class UserFollowSerializer(UserSerializer):
             return serializer.data
         return []
 
-
     def get_recipes_count(self, obj):
         return Recipe.objects.filter(author=obj).count()
-        
 
 
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор для тегов """
-    
+
     color = serializers.CharField(
         validators=[color_validator]
-        )
+    )
 
     class Meta:
         model = Tag
@@ -123,7 +117,7 @@ class IngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для ингридиентов"""
 
     class Meta:
-        model = Ingredient  
+        model = Ingredient
         fields = (
             'id',
             'name',
@@ -146,16 +140,16 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
         return obj.ingredient.name
 
     def get_measurement_unit(self, obj):
-        return obj.ingredient.measurement_unit    
+        return obj.ingredient.measurement_unit
 
     class Meta:
         model = RecipeIngredient
         fields = (
-            'id', 
-            'name', 
-            'measurement_unit', 
+            'id',
+            'name',
+            'measurement_unit',
             'amount'
-            )
+        )
 
 
 class CreateUpdateRecipeIngredientsSerializer(serializers.ModelSerializer):
@@ -172,7 +166,6 @@ class CreateUpdateRecipeIngredientsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
         fields = ('id', 'amount')
-
 
 
 class GetRecipeSerializer(serializers.ModelSerializer):
@@ -231,7 +224,7 @@ class GetRecipeSerializer(serializers.ModelSerializer):
                 ingredient=ingredient,
                 amount=amount
             )
-        return recipe      
+        return recipe
 
     def update(self, instance, validated_data):
         tags = validated_data.pop('tags', None)
@@ -249,7 +242,6 @@ class GetRecipeSerializer(serializers.ModelSerializer):
                     defaults={'amount': amount}
                 )
         return super().update(instance, validated_data)
-
 
     def to_representation(self, instance):
         serializer = RecipeSerializer(
@@ -282,11 +274,11 @@ class RecipeSerializer(serializers.ModelSerializer):
         if not isinstance(value, int):
             raise serializers.ValidationError(
                 'Время приготовления должно быть целым числом!'
-                )
+            )
         if value < 1:
             raise serializers.ValidationError(
                 'Время приготовления должно быть больше или равно 1!'
-                )
+            )
         return value
 
     def get_ingredients(self, obj):
@@ -297,25 +289,23 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         user = self.context['request'].user
         if user.is_anonymous:
-            return False    
+            return False
         return Favorite.objects.filter(user=user, recipe=obj).exists()
-
 
     def get_is_in_shopping_cart(self, obj):
         user = self.context['request'].user
         if user.is_anonymous:
             return False
-        return ShopingList.objects.filter(user=user, recipe=obj).exists()    
+        return ShopingList.objects.filter(user=user, recipe=obj).exists()
 
-  
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
         fields = (
-            'id', 
-            'name', 
-            'image', 
+            'id',
+            'name',
+            'image',
             'cooking_time'
-            )
+        )

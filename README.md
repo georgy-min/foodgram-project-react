@@ -64,7 +64,11 @@ sudo docker-compose exec backend python manage.py fill_tags
 ```sh
 sudo docker-compose exec backend python3 manage.py dumpdata > fixtures.json
 ```
-
+## Для просмотра проекта, перейти на адрес: http://94.131.14.53
+```sh
+admin@admin.cc
+admin
+```
 ## Автор
 
 [Георгий Минин](https://github.com/georgy-min/)

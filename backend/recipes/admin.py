@@ -15,11 +15,11 @@ class TagAdmin(admin.ModelAdmin):
     list_filter = ('name', 'slug',)
     search_fields = ('name', 'slug',)
 
-
+@admin.register(RecipeIngredient)
 class IngredientsInRecipeInline(admin.TabularInline):
     model = Recipe.ingredients.through
 
-
+@admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     inlines = [
         IngredientsInRecipeInline,
@@ -28,7 +28,7 @@ class IngredientAdmin(admin.ModelAdmin):
     list_filter = ('name',)
     empty_value_display = '-empty-'
 
-
+@admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     inlines = [
         IngredientsInRecipeInline,
@@ -44,12 +44,3 @@ class RecipeAdmin(admin.ModelAdmin):
         return obj.favorite.all().count()
 
     count_favorite.short_description = 'Избранных'
-
-
-admin.site.register(Ingredient, IngredientAdmin)
-admin.site.register(Recipe, RecipeAdmin)
-admin.site.register(RecipeIngredient)
-admin.site.register(Favorite)
-admin.site.register(ShopingList)        
-
-
