@@ -17,40 +17,35 @@ class IngredientFilter(django_filters.FilterSet):
         fields = ("name",)
 
 
-class RecipeFilterBackend(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        is_favorited = request.query_params.get("is_favorited")
-        is_in_shopping_cart = request.query_params.get("is_in_shopping_cart")
-        author = request.query_params.get("author")
-        tags = request.query_params.getlist("tags")
+class RecipeFilter(FilterSet):
+    
+    tags = filters.ModelMultipleChoiceFilter(
+        field_name='tags__slug',
+        to_field_name='slug',
+        queryset=Tag.objects.all(),
+    )
+    is_favorited = filters.BooleanFilter(method='is_favorited_filter')
+    is_in_shopping_cart = filters.BooleanFilter(
+        method='is_in_shopping_cart_filter'
+    )
 
-        if is_favorited is not None:
-            if request.user.is_anonymous:
-                return Recipe.objects.none()
+    class Meta:
+        model = Recipe
+        fields = (
+            'tags',
+            'author',
+            'is_favorited',
+            'is_in_shopping_cart',
+        )
 
-            favorites = Favorite.objects.filter(user=request.user)
-            recipes = [item.recipe.id for item in favorites]
-            queryset = (
-                queryset.filter(id__in=recipes)
-                if strtobool(is_favorited)
-                else queryset.exclude(id__in=recipes)
-            )
+    def is_favorited_filter(self, queryset, name, data):
+        user = self.request.user
+        if data and user.is_authenticated:
+            return queryset.filter(favoriting__user=user)
+        return queryset
 
-        if is_in_shopping_cart is not None:
-            if request.user.is_anonymous:
-                return Recipe.objects.none()
-
-            shopping_cart = ShopingList.objects.filter(user=request.user)
-            recipes = [item.recipe.id for item in shopping_cart]
-            queryset = (
-                queryset.filter(id__in=recipes)
-                if strtobool(is_in_shopping_cart)
-                else queryset.exclude(id__in=recipes)
-            )
-
-        if author is not None:
-            queryset = queryset.filter(author=author)
-
-        if tags:
-            queryset = queryset.filter(tags__slug__in=tags)
+    def is_in_shopping_cart_filter(self, queryset, name, data):
+        user = self.request.user
+        if data and user.is_authenticated:
+            return queryset.filter(shopping_cart__user=user)
         return queryset

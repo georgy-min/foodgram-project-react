@@ -1,21 +1,19 @@
-import re
-
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.files.base import ContentFile
 from django.core.validators import MinValueValidator
 from django.shortcuts import get_object_or_404, render
-from djoser.serializers import UserCreateSerializer, UserSerializer
+from djoser.serializers import UserSerializer as DjoserUserSerialiser
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShopingList, Tag)
 from rest_framework import serializers
-from users.models import Follow, MyUser
+from users.models import Follow, MyUser 
 
 from .validators import (color_validator, favorite_validator,
                          follow_unique_validator, shopping_cart_validator)
 
 
-class MyUserCreateSerializer(UserCreateSerializer):
+class UserSerializer(DjoserUserSerializer):
     """ Сериализатор создания пользователя. """
 
     class Meta:
@@ -127,20 +125,11 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Сериализатор модели RecipeIngredient"""
-    id = serializers.SerializerMethodField(method_name='get_id')
-    name = serializers.SerializerMethodField(method_name='get_name')
-    measurement_unit = serializers.SerializerMethodField(
-        method_name='get_measurement_unit'
+    id = serializers.ReadOnlyField(source="ingredient.id")
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit'
     )
-
-    def get_id(self, obj):
-        return obj.ingredient.id
-
-    def get_name(self, obj):
-        return obj.ingredient.name
-
-    def get_measurement_unit(self, obj):
-        return obj.ingredient.measurement_unit
 
     class Meta:
         model = RecipeIngredient
