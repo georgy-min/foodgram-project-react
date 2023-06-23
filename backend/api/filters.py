@@ -7,8 +7,7 @@ from rest_framework.filters import BaseFilterBackend
 
 
 class IngredientFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(
-        field_name="name", lookup_expr="istartswith")
+    name = django_filters.CharFilter(field_name="name", lookup_expr="istartswith")
 
     class Meta:
         model = Ingredient
@@ -16,24 +15,21 @@ class IngredientFilter(django_filters.FilterSet):
 
 
 class RecipeFilter(FilterSet):
-    
     tags = filters.ModelMultipleChoiceFilter(
-        field_name='tags__slug',
-        to_field_name='slug',
+        field_name="tags__slug",
+        to_field_name="slug",
         queryset=Tag.objects.all(),
     )
-    is_favorited = filters.BooleanFilter(method='is_favorited_filter')
-    is_in_shopping_cart = filters.BooleanFilter(
-        method='is_in_shopping_cart_filter'
-    )
+    is_favorited = filters.BooleanFilter(method="is_favorited_filter")
+    is_in_shopping_cart = filters.BooleanFilter(method="is_in_shopping_cart_filter")
 
     class Meta:
         model = Recipe
         fields = (
-            'tags',
-            'author',
-            'is_favorited',
-            'is_in_shopping_cart',
+            "tags",
+            "author",
+            "is_favorited",
+            "is_in_shopping_cart",
         )
 
     def is_favorited_filter(self, queryset, name, data):

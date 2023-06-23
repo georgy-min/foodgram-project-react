@@ -78,21 +78,16 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name="Время приготовления в минутах",
-        validators=[MinValueValidator(
-            1, message="Мин. время приготовления 1 минута"
-            ),
+        validators=[
+            MinValueValidator(1, message="Мин. время приготовления 1 минута"),
         ],
     )
     pub_date = models.DateTimeField(
         verbose_name="Время публикации",
         auto_now_add=True,
     )
-    ingredients = models.ManyToManyField(
-        Ingredient, through="RecipeIngredient"
-    )
-    tags = models.ManyToManyField(
-        Tag, verbose_name="Тэги", related_name="recipes"
-    )
+    ingredients = models.ManyToManyField(Ingredient, through="RecipeIngredient")
+    tags = models.ManyToManyField(Tag, verbose_name="Тэги", related_name="recipes")
 
     class Meta:
         verbose_name = "Рецепт"
@@ -121,9 +116,7 @@ class RecipeIngredient(models.Model):
     amount = models.PositiveIntegerField(
         verbose_name="Количество",
         validators=[
-            MinValueValidator(
-                1, message="Минимальное количество ингредиентов 1"
-            )
+            MinValueValidator(1, message="Минимальное количество ингредиентов 1")
         ],
     )
 
@@ -140,7 +133,7 @@ class RecipeIngredient(models.Model):
 
     def __str__(self):
         return (
-            f"Рецепт: {self.recipe}." 
+            f"Рецепт: {self.recipe}."
             f"Ингридиент: {self.ingredient}, "
             f"КОЛИЧЕСТВО: {self.amount}"
         )
@@ -161,25 +154,19 @@ class Favorite(models.Model):
         related_name="favorite",
         verbose_name="Рецепт из списка избранного",
     )
-    date_added = DateTimeField(
-        verbose_name="Дата добавления", auto_now_add=True
-    )
+    date_added = DateTimeField(verbose_name="Дата добавления", auto_now_add=True)
 
     class Meta:
         verbose_name = "Избранное"
         verbose_name_plural = "Избранные"
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "recipe"],
-                name="unique_favorite_recipe"
+                fields=["user", "recipe"], name="unique_favorite_recipe"
             )
         ]
 
     def __str__(self):
-        return (
-            f"Пользователь: {self.user}"
-            f" добавил в избранное: {self.recipe}"
-        )
+        return f"Пользователь: {self.user}" f" добавил в избранное: {self.recipe}"
 
 
 class ShopingList(models.Model):
@@ -203,13 +190,9 @@ class ShopingList(models.Model):
         verbose_name_plural = "Список покупок"
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "recipe"], 
-                name="unique_list_recipe"
+                fields=["user", "recipe"], name="unique_list_recipe"
             )
         ]
 
     def __str__(self):
-        return (
-            f"Пользователь: {self.user}"
-            f" добавил в cписок покупок: {self.recipe}"
-        )
+        return f"Пользователь: {self.user}" f" добавил в cписок покупок: {self.recipe}"
