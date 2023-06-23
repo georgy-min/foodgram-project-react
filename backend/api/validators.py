@@ -1,6 +1,6 @@
 from rest_framework.validators import UniqueTogetherValidator
 from users.models import Follow
-from recipes.models import ShopingList, Favorite, RecipeIngredient
+from recipes.models import ShopingList, Favorite
 from django.core.validators import RegexValidator
 
 

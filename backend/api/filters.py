@@ -1,13 +1,12 @@
 import django_filters
-from django.db.models import Count, Q
-from django_filters import rest_framework
 from django_filters.rest_framework import FilterSet, filters
-from recipes.models import Favorite, Ingredient, Recipe, ShopingList, Tag
-from rest_framework.filters import BaseFilterBackend
+from recipes.models import Ingredient, Recipe, Tag
 
 
 class IngredientFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(field_name="name", lookup_expr="istartswith")
+    name = django_filters.CharFilter(
+        field_name="name", lookup_expr="istartswith"
+    )
 
     class Meta:
         model = Ingredient
@@ -21,7 +20,9 @@ class RecipeFilter(FilterSet):
         queryset=Tag.objects.all(),
     )
     is_favorited = filters.BooleanFilter(method="is_favorited_filter")
-    is_in_shopping_cart = filters.BooleanFilter(method="is_in_shopping_cart_filter")
+    is_in_shopping_cart = filters.BooleanFilter(
+        method="is_in_shopping_cart_filter"
+    )
 
     class Meta:
         model = Recipe
