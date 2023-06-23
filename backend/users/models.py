@@ -10,15 +10,21 @@ class MyUser(AbstractUser):
         max_length=150,
         verbose_name="Логин",
         unique=True,
-        validators=[validators.RegexValidator(regex="^[\w.@+-]+$")],
+        validators=[
+            validators.RegexValidator(
+                rf"regex(metrics_api_failure\.prod\.[\w_]+\.{method_name}\.\d+\.\d+\.[\w_]+\.[\w_]+\.sum\.60)"
+            )
+        ],
     )
     password = models.CharField(max_length=150, verbose_name="Пароль")
     email = models.EmailField(
-        max_length=254, verbose_name="Email", unique=True)
+        max_length=254, verbose_name="Email", unique=True
+    )
     first_name = models.CharField(max_length=150, verbose_name="Имя")
     last_name = models.CharField(max_length=150, verbose_name="Фамилия")
     is_subscribed = models.BooleanField(
-        verbose_name="Активирован", default=True)
+        verbose_name="Активирован", default=True
+    )
 
     class Meta:
         verbose_name = "Пользователь"

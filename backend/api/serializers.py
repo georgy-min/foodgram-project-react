@@ -1,8 +1,8 @@
 from django.core.validators import MinValueValidator
 from django.db import transaction
 from django.db.models import Subquery, OuterRef
-from django.shortcuts import get_object_or_404, render
 from djoser.serializers import UserSerializer as DjoserUserSerializer
+from asyncio import exceptions
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (
     Favorite,
@@ -14,8 +14,7 @@ from recipes.models import (
 )
 from rest_framework import serializers
 from users.models import Follow, MyUser
-
-from .validators import color_validator, favorite_validator
+from .validators import color_validator
 
 
 class UserSerializer(DjoserUserSerializer):
