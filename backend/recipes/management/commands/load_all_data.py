@@ -9,7 +9,8 @@ class Command(BaseCommand):
             data = json.load(file)
             for item in data:
                 ingredient = Ingredient.objects.create(
-                    name=item["name"], measurement_unit=item["measurement_unit"]
+                    name=item["name"],
+                    measurement_unit=item["measurement_unit"],
                 )
                 self.stdout.write(
                     self.style.SUCCESS(

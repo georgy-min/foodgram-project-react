@@ -28,7 +28,9 @@ urlpatterns = [
     ),
     path(
         r"recipes/<int:id>/shopping_cart/",
-        RecipeViewSet.as_view({"post": "shopping_cart", "delete": "shopping_cart"}),
+        RecipeViewSet.as_view(
+            {"post": "shopping_cart", "delete": "shopping_cart"}
+        ),
         name="shopping_cart",
     ),
 ]

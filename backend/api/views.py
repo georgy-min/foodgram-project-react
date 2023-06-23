@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from djoser.views import UserViewSet
-from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets, exceptions, filters
@@ -10,21 +10,15 @@ from django.db.models import Sum
 
 
 from django_filters.rest_framework import DjangoFilterBackend
-from reportlab.pdfgen import canvas
-from collections import defaultdict
 
 from users.pagination import CustomPageNumberPagination
 
-from .filters import IngredientFilter, RecipeFilterBackend
-from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
+from .filters import RecipeFilterBackend
+from .permissions import IsAuthorOrReadOnly
 from .serializers import (
-    MyUserSerializer,
-    MyUserCreateSerializer,
     UserFollowSerializer,
     TagSerializer,
     IngredientSerializer,
-    RecipeIngredientSerializer,
-    CreateUpdateRecipeIngredientsSerializer,
     GetRecipeSerializer,
     RecipeSerializer,
     ShortRecipeSerializer,

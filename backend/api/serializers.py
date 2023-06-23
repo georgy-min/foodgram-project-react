@@ -1,9 +1,8 @@
-from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import transaction
 from django.db.models import Subquery, OuterRef
 from django.shortcuts import get_object_or_404, render
-from djoser.serializers import UserSerializer as DjoserUserSerialiser
+from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (
     Favorite,
