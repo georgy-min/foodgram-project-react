@@ -1,5 +1,3 @@
-from distutils.util import strtobool
-
 import django_filters
 from django.db.models import Count, Q
 from django_filters import rest_framework

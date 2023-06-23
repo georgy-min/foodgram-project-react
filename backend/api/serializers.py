@@ -1,6 +1,8 @@
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.files.base import ContentFile
 from django.core.validators import MinValueValidator
+from django.db import transaction
+from django.db.models import Subquery, OuterRef
 from django.shortcuts import get_object_or_404, render
 from djoser.serializers import UserSerializer as DjoserUserSerialiser
 from drf_extra_fields.fields import Base64ImageField
@@ -199,38 +201,40 @@ class GetRecipeSerializer(serializers.ModelSerializer):
                 )
         return value
 
+    @transaction.atomic
+    def create_ingredients_amounts(self, ingredients, recipe):
+        RecipeIngredient.objects.bulk_create(
+            [RecipeIngredient(
+                ingredient=Ingredient.objects.get(id=ingredient['id']),
+                recipe=recipe,
+                amount=ingredient['amount']
+            ) for ingredient in ingredients]
+
+    @transaction.atomic
     def create(self, validated_data):
-        author = self.context.get('request').user
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(author=author, **validated_data)
+        recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
-        for ingredient in ingredients:
-            amount = ingredient['amount']
-            ingredient = get_object_or_404(Ingredient, pk=ingredient['id'])
-            RecipeIngredient.objects.create(
-                recipe=recipe,
-                ingredient=ingredient,
-                amount=amount
-            )
+        self.create_ingredients_amounts(
+            recipe=recipe,
+            ingredients=ingredients
+        )
         return recipe
 
+   @transaction.atomic
     def update(self, instance, validated_data):
-        tags = validated_data.pop('tags', None)
-        if tags is not None:
-            instance.tags.set(tags)
-        ingredients = validated_data.pop('ingredients', None)
-        if ingredients is not None:
-            instance.ingredients.clear()
-            for ingredient in ingredients:
-                amount = ingredient['amount']
-                ingredient = get_object_or_404(Ingredient, pk=ingredient['id'])
-                RecipeIngredient.objects.update_or_create(
-                    recipe=instance,
-                    ingredient=ingredient,
-                    defaults={'amount': amount}
-                )
-        return super().update(instance, validated_data)
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        instance = super().update(instance, validated_data)
+        instance.tags.clear()
+        instance.tags.set(tags)
+        instance.ingredients.clear()
+        self.create_ingredients_amounts(
+            recipe=instance,
+            ingredients=ingredients
+        )
+        return instance
 
     def to_representation(self, instance):
         serializer = RecipeSerializer(
@@ -270,22 +274,42 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        qs = qs.annotate(
+            ingredients=Subquery(
+                RecipeIngredient.objects.filter(
+                    recipe_id=OuterRef("id")
+                ).values("ingredient__name")
+            ),
+            is_favorited=Subquery(
+                Favorite.objects.filter(
+                    user=self.context['request'].user, recipe_id=OuterRef("id")
+                ).values("id")[:1]
+            ),
+            is_in_shopping_cart=Subquery(
+                ShopingList.objects.filter(
+                    user=self.context['request'].user, recipe_id=OuterRef("id")
+                ).values("id")[:1]
+            ),
+            author_name=Subquery(
+                MyUser.objects.filter(
+                    id=OuterRef("author_id")
+                ).values("username")[:1]
+            ),
+        )
+        return qs
+
     def get_ingredients(self, obj):
-        ingredients = RecipeIngredient.objects.filter(recipe=obj)
+        ingredients = obj.ingredients.all()
         serializer = RecipeIngredientSerializer(ingredients, many=True)
         return serializer.data
 
     def get_is_favorited(self, obj):
-        user = self.context['request'].user
-        if user.is_anonymous:
-            return False
-        return Favorite.objects.filter(user=user, recipe=obj).exists()
+        return obj.is_favorited
 
     def get_is_in_shopping_cart(self, obj):
-        user = self.context['request'].user
-        if user.is_anonymous:
-            return False
-        return ShopingList.objects.filter(user=user, recipe=obj).exists()
+        return obj.is_in_shopping_cart
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
