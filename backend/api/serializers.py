@@ -5,7 +5,7 @@ from djoser.serializers import UserSerializer as DjoserUserSerializer
 from asyncio import exceptions
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (
-    Favorite,
+    Favorie,
     Ingredient,
     Recipe,
     RecipeIngredient,
@@ -55,7 +55,7 @@ class UserFollowSerializer(UserSerializer):
     """Сериализатор вывода авторов на которых только что подписался пользователь.
     В выдачу добавляются рецепты."""
 
-    recipes = ShortRecipeSerializer(many=True, read_only=True)
+    recipes = serializers.ShortRecipeSerializer(many=True, read_only=True)
     recipes_count = serializers.SerializerMethodField(
         method_name="get_recipes_count"
     )
