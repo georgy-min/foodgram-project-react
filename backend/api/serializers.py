@@ -91,7 +91,7 @@ class UserFollowSerializer(UserSerializer):
 
     def get_recipes_count(self, obj):
 
-    return Recipe.objects.filter(author=obj).annotate(num_recipes=Count('recipes_limit')).count()
+        return Recipe.objects.filter(author=obj).annotate(num_recipes=Count('recipes_limit')).count()
 
 
 class TagSerializer(serializers.ModelSerializer):
