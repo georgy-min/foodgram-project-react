@@ -132,8 +132,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Recipe.objects.annotate(
             ingredients=Subquery(
-                RecipeIngredient.objects.filter(recipe_id=OuterRef("id"))
-                .values("ingredient__name")
+                RecipeIngredient.objects.filter(
+                    recipe_id=OuterRef("id")
+                ).values("ingredient__name")
             ),
             is_favorited=Subquery(
                 Favorite.objects.filter(
@@ -146,7 +147,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 ).values("id")[:1]
             ),
             author_name=Subquery(
-                MyUser.objects.filter(id=OuterRef("author_id")).values("username")[:1]
+                MyUser.objects.filter(id=OuterRef("author_id")).values(
+                    "username"
+                )[:1]
             ),
         )
 
@@ -177,10 +180,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-        return Response(
-            serializer.errors, status=status.HTTP_400_BAD_REQUEST
-        )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         methods=[
@@ -193,7 +194,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             IsAuthenticated,
         ],
     )
-    
     @action(
         methods=["POST", "DELETE"],
         detail=True,
