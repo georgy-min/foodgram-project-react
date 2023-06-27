@@ -5,11 +5,9 @@ from djoser.serializers import UserSerializer as DjoserUserSerializer
 from asyncio import exceptions
 from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (
-    Favorie,
     Ingredient,
     Recipe,
     RecipeIngredient,
-    ShopingList,
     Tag,
 )
 from rest_framework import serializers
