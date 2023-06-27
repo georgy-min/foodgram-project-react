@@ -1,6 +1,6 @@
 from django.core.validators import MinValueValidator
 from django.db import transaction
-from django.db.models import Subquery, OuterRef
+from django.db.models import Count
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from asyncio import exceptions
 from drf_extra_fields.fields import Base64ImageField
@@ -55,7 +55,7 @@ class UserFollowSerializer(UserSerializer):
     """Сериализатор вывода авторов на которых только что подписался пользователь.
     В выдачу добавляются рецепты."""
 
-    recipes = serializers.SerializerMethodField(method_name="get_recipes")
+    recipes = ShortRecipeSerializer(many=True, read_only=True)
     recipes_count = serializers.SerializerMethodField(
         method_name="get_recipes_count"
     )
@@ -74,8 +74,6 @@ class UserFollowSerializer(UserSerializer):
         )
         read_only_fields = ("__all__",)
 
-    def get_srs(self):
-        return ShortRecipeSerializer
 
     def get_recipes(self, obj):
         author_recipes = Recipe.objects.filter(author=obj)
@@ -92,7 +90,8 @@ class UserFollowSerializer(UserSerializer):
         return []
 
     def get_recipes_count(self, obj):
-        return Recipe.objects.filter(author=obj).count()
+
+    return Recipe.objects.filter(author=obj).annotate(num_recipes=Count('recipes_limit')).count()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -261,32 +260,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        qs = qs.annotate(
-            ingredients=Subquery(
-                RecipeIngredient.objects.filter(
-                    recipe_id=OuterRef("id")
-                ).values("ingredient__name")
-            ),
-            is_favorited=Subquery(
-                Favorite.objects.filter(
-                    user=self.context["request"].user, recipe_id=OuterRef("id")
-                ).values("id")[:1]
-            ),
-            is_in_shopping_cart=Subquery(
-                ShopingList.objects.filter(
-                    user=self.context["request"].user, recipe_id=OuterRef("id")
-                ).values("id")[:1]
-            ),
-            author_name=Subquery(
-                MyUser.objects.filter(id=OuterRef("author_id")).values(
-                    "username"
-                )[:1]
-            ),
-        )
-        return qs
-
+    
     def get_ingredients(self, obj):
         ingredients = obj.ingredients.all()
         serializer = RecipeIngredientSerializer(ingredients, many=True)

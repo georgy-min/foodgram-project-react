@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets, exceptions, filters
-from django.db.models import Sum
+from django.db.models import Sum, Subquery, OuterRef
 
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -129,6 +129,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = [RecipeFilterBackend]
     pagination_class = CustomPageNumberPagination
 
+    def get_queryset(self):
+        qs = Recipe.objects.annotate(
+            ingredients=Subquery(
+                RecipeIngredient.objects.filter(recipe_id=OuterRef("id"))
+                .values("ingredient__name")
+            ),
+            is_favorited=Subquery(
+                Favorite.objects.filter(
+                    user=self.request.user, recipe_id=OuterRef("id")
+                ).values("id")[:1]
+            ),
+            is_in_shopping_cart=Subquery(
+                ShopingList.objects.filter(
+                    user=self.request.user, recipe_id=OuterRef("id")
+                ).values("id")[:1]
+            ),
+            author_name=Subquery(
+                MyUser.objects.filter(id=OuterRef("author_id")).values("username")[:1]
+            ),
+        )
+
+        return qs
+
     def get_serializer_class(self):
         """Определяет какой сериализатор использовать"""
         if self.action in ("create", "partial_update"):
@@ -154,10 +177,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
+        
+        return Response(
+            serializer.errors, status=status.HTTP_400_BAD_REQUEST
+        )
 
     @action(
         methods=[
@@ -170,28 +193,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             IsAuthenticated,
         ],
     )
-    def recipes_delete(self, request):
-        recipe_id = request.query_params.get("id")
-        if not recipe_id:
-            return Response(
-                {"detail": "Укажите идентификатор рецепта"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        try:
-            recipe = Recipe.objects.get(id=recipe_id)
-        except Recipe.DoesNotExist:
-            return Response(
-                {"detail": "Рецепт не найден"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        if recipe.author != request.user:
-            return Response(
-                {"detail": "Вы не автор этого рецепта"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        recipe.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
+    
     @action(
         methods=["POST", "DELETE"],
         detail=True,
