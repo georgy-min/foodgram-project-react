@@ -74,7 +74,6 @@ class UserFollowSerializer(UserSerializer):
         )
         read_only_fields = ("__all__",)
 
-
     def get_recipes(self, obj):
         author_recipes = Recipe.objects.filter(author=obj)
         if "recipes_limit" in self.context.get("request").GET:
@@ -90,8 +89,11 @@ class UserFollowSerializer(UserSerializer):
         return []
 
     def get_recipes_count(self, obj):
-
-        return Recipe.objects.filter(author=obj).annotate(num_recipes=Count('recipes_limit')).count()
+        return (
+            Recipe.objects.filter(author=obj)
+            .annotate(num_recipes=Count("recipes_limit"))
+            .count()
+        )
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -260,7 +262,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
         return value
 
-    
     def get_ingredients(self, obj):
         ingredients = obj.ingredients.all()
         serializer = RecipeIngredientSerializer(ingredients, many=True)
