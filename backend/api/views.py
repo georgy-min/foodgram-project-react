@@ -136,21 +136,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     recipe_id=OuterRef("id")
                 ).values("ingredient__name")
             ),
-            is_favorited=Subquery(
-                Favorite.objects.filter(
-                    user=self.request.user, recipe_id=OuterRef("id")
-                ).values("id")[:1]
-            ),
-            is_in_shopping_cart=Subquery(
-                ShopingList.objects.filter(
-                    user=self.request.user, recipe_id=OuterRef("id")
-                ).values("id")[:1]
-            ),
-            author_name=Subquery(
-                MyUser.objects.filter(id=OuterRef("author_id")).values(
-                    "username"
-                )[:1]
-            ),
+            is_favorited=Favorite.objects.filter(
+                user=OuterRef("request__user"), recipe_id=OuterRef("pk")
+            ).exists(),
+            is_in_shopping_cart=ShopingList.objects.filter(
+                user=OuterRef("request__user"), recipe_id=OuterRef("pk")
+            ).exists(),
         )
 
         return qs
