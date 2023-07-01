@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets, exceptions, filters
-from django.db.models import Sum, Subquery, OuterRef
+from django.db.models import Exists, Sum, OuterRef
 
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -123,28 +123,33 @@ class IngredientViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     """Viewset для объектов модели Recipe"""
 
-    queryset = Recipe.objects.all()
+    queryset = Recipe.objects.prefetch_related('recipe_ingredients').all() 
     permission_classes = (IsAuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = [RecipeFilterBackend]
     pagination_class = CustomPageNumberPagination
 
-    def get_queryset(self):
-        qs = Recipe.objects.annotate(
-            ingredients=Subquery(
-                RecipeIngredient.objects.filter(
-                    recipe_id=OuterRef("id")
-                ).values("ingredient__name")
-            ),
-            is_favorited=Favorite.objects.filter(
-                user=OuterRef("request__user"), recipe_id=OuterRef("pk")
-            ).exists(),
-            is_in_shopping_cart=ShopingList.objects.filter(
-                user=OuterRef("request__user"), recipe_id=OuterRef("pk")
-            ).exists(),
-        )
+    def get_queryset(self): 
 
-        return qs
+        user = self.request.user 
+
+        qs = Recipe.objects.annotate( 
+
+            is_favorited=Exists(Favorite.objects.filter( 
+
+                user=user, recipe_id=OuterRef('pk') 
+
+            )), 
+
+            is_in_shopping_cart=Exists(ShopingList.objects.filter( 
+
+                user=user, recipe_id=OuterRef('pk') 
+
+            )), 
+
+        ) 
+
+        return qs 
 
     def get_serializer_class(self):
         """Определяет какой сериализатор использовать"""
