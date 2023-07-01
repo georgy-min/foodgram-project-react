@@ -123,33 +123,25 @@ class IngredientViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     """Viewset для объектов модели Recipe"""
 
-    queryset = Recipe.objects.prefetch_related('recipe_ingredients').all() 
+    queryset = Recipe.objects.prefetch_related("recipe_ingredients").all()
     permission_classes = (IsAuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = [RecipeFilterBackend]
     pagination_class = CustomPageNumberPagination
 
-    def get_queryset(self): 
+    def get_queryset(self):
+        user = self.request.user
 
-        user = self.request.user 
+        qs = Recipe.objects.annotate(
+            is_favorited=Exists(
+                Favorite.objects.filter(user=user, recipe_id=OuterRef("pk"))
+            ),
+            is_in_shopping_cart=Exists(
+                ShopingList.objects.filter(user=user, recipe_id=OuterRef("pk"))
+            ),
+        )
 
-        qs = Recipe.objects.annotate( 
-
-            is_favorited=Exists(Favorite.objects.filter( 
-
-                user=user, recipe_id=OuterRef('pk') 
-
-            )), 
-
-            is_in_shopping_cart=Exists(ShopingList.objects.filter( 
-
-                user=user, recipe_id=OuterRef('pk') 
-
-            )), 
-
-        ) 
-
-        return qs 
+        return qs
 
     def get_serializer_class(self):
         """Определяет какой сериализатор использовать"""
